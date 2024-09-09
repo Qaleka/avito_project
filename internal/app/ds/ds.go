@@ -25,7 +25,7 @@ type Organization struct {
 	ID          uint            `gorm:"primaryKey" json:"id"`
 	Name        string          `gorm:"size:100;not null" json:"name"`
 	Description string          `gorm:"type:text" json:"description"`
-	Type        OrganizationType `gorm:"type:organization_type" json:"type"`
+	Type        OrganizationType `gorm:"type:string" json:"type"`
 	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time       `gorm:"autoUpdateTime" json:"updated_at"`
 }
@@ -49,16 +49,16 @@ const (
 )
 
 type Tender struct {
-	ID             uint         `gorm:"primaryKey" json:"id"`
-	Name           string       `gorm:"size:100;not null" json:"name"`
-	Description    string       `gorm:"type:text" json:"description"`
-	ServiceType    string  `gorm:"type:string;not null" json:"service_type"`
-	Status         TenderStatus `gorm:"type:string;not null" json:"status"`
-	OrganizationID uint         `gorm:"not null" json:"organization_id"`
-	CreatorUsername string      `gorm:"size:50;not null" json:"creator_username"`
+	ID             uint         `gorm:"primaryKey" json:"id" binding:"-"`
+	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"required"`
+	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"required"`
+	ServiceType    string  `gorm:"type:string;not null" form:"service_type" json:"service_type" binding:"required"`
+	Status         TenderStatus `gorm:"type:string;not null" form:"status" json:"status" binding:"required"`
+	OrganizationID uint         `gorm:"not null" form:"organization_id" json:"organization_id" binding:"required"`
+	CreatorUsername string      `gorm:"size:50;not null" form:"organization_id" json:"creator_username" binding:"required"`
 
 	// Связь с организацией
-	Organization Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization"`
+	Organization Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization" binding:"-"`
 }
 
 type ProposalStatus string

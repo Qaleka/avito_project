@@ -29,7 +29,7 @@ func (app *Application) Run() {
 	r.GET("/api/ping", app.Ping)    
 	//Тендеры
 	r.GET("/api/tenders", app.GetAllTenders)
-	// r.POST("/api/tenders/new", app.AddTender)
+	r.POST("/api/tenders/new", app.AddTender)
 	// r.GET("/api/tenders/my", app.GetTender)
 	// r.PUT("/api/tenders/:tender_id/edit", app.ChangeTender)
 	// r.PUT("/api/tenders/:tender_id/rollback/:version", app.RollbackTender)
