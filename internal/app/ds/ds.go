@@ -5,12 +5,12 @@ import (
 )
 
 type Employee struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
+	ID        string      `gorm:"primaryKey;default:gen_random_uuid()" json:"id"`
 	Username  string    `gorm:"size:50;unique;not null" json:"username"`
 	FirstName string    `gorm:"size:50" json:"first_name"`
 	LastName  string    `gorm:"size:50" json:"last_name"`
-	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	CreatedAt time.Time `gorm:"type:timestamp" json:"created_at"`
+	UpdatedAt time.Time `gorm:"type:timestamp" json:"updated_at"`
 }
 
 type OrganizationType string
@@ -22,43 +22,40 @@ const (
 )
 
 type Organization struct {
-	ID          uint            `gorm:"primaryKey" json:"id"`
+	ID          string            `gorm:"primaryKey;default:gen_random_uuid()" json:"id"`
 	Name        string          `gorm:"size:100;not null" json:"name"`
 	Description string          `gorm:"type:text" json:"description"`
 	Type        OrganizationType `gorm:"type:string" json:"type"`
-	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time       `gorm:"autoUpdateTime" json:"updated_at"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	UpdatedAt   time.Time       `gorm:"type:timestamp" json:"updated_at"`
 }
 
 type OrganizationResponsible struct {
 	ID            uint   `gorm:"primaryKey" json:"id"`
-	OrganizationID uint   `gorm:"not null" json:"organization_id"`
-	UserID        uint   `gorm:"not null" json:"user_id"`
+	OrganizationID string   `gorm:"not null" json:"organization_id"`
+	UserID        string   `gorm:"not null" json:"user_id"`
 	
 	// Связи
 	Organization Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization"`
 	User         Employee     `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user"`
 }
 
-type TenderStatus string
-
-const (
-	Open       TenderStatus = "Open"
-	Closed     TenderStatus = "Closed"
-	InProgress TenderStatus = "InProgress"
-)
+const CREATED string = "Created"
+const PUBLISHED string = "Published"
+const CLOSED string = "Closed"
 
 type Tender struct {
-	ID             uint         `gorm:"primaryKey" json:"id" binding:"-"`
+	ID             string         `gorm:"primaryKey;default:gen_random_uuid()" json:"id" binding:"-"`
 	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"required"`
 	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"required"`
 	ServiceType    string  `gorm:"type:string;not null" form:"service_type" json:"service_type" binding:"required"`
-	Status         TenderStatus `gorm:"type:string;not null" form:"status" json:"status" binding:"required"`
-	OrganizationID uint         `gorm:"not null" form:"organization_id" json:"organization_id" binding:"required"`
-	CreatorUsername string      `gorm:"size:50;not null" form:"organization_id" json:"creator_username" binding:"required"`
-
+	Status         string `gorm:"type:string;not null" form:"status" json:"status" binding:"required"`
+	OrganizationID string         `gorm:"not null" form:"organization_id" json:"organization_id" binding:"required"`
+	CreatorUsername string      `gorm:"size:50;not null" form:"creator_username" json:"creator_username" binding:"required"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	UpdatedAt   time.Time       `gorm:"type:timestamp" json:"updated_at"`
 	// Связь с организацией
-	Organization Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization" binding:"-"`
+	Organization Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"-" binding:"-"`
 }
 
 type ProposalStatus string
@@ -69,14 +66,16 @@ const (
 	Rejected  ProposalStatus = "Rejected"
 )
 
-type Proposal struct {
-	ID             uint            `gorm:"primaryKey" json:"id"`
+type Bid struct {
+	ID             string            `gorm:"primaryKey;default:gen_random_uuid()" json:"id"`
 	Name           string          `gorm:"size:100;not null" json:"name"`
 	Description    string          `gorm:"type:text" json:"description"`
 	Status         ProposalStatus  `gorm:"type:string;not null" json:"status"`
-	TenderID       uint            `gorm:"not null" json:"tender_id"`
-	OrganizationID uint            `gorm:"not null" json:"organization_id"`
+	TenderID       string            `gorm:"not null" json:"tender_id"`
+	OrganizationID string            `gorm:"not null" json:"organization_id"`
 	CreatorUsername string         `gorm:"size:50;not null" json:"creator_username"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	UpdatedAt   time.Time       `gorm:"type:timestamp" json:"updated_at"`
 
 	// Связь с тендером
 	Tender        Tender       `gorm:"foreignKey:TenderID;constraint:OnDelete:CASCADE" json:"tender"`

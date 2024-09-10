@@ -21,7 +21,7 @@ func main() {
 		&ds.Employee{},
 		&ds.Organization{},
 		&ds.Tender{},
-		&ds.Proposal{},
+		&ds.Bid{},
 		&ds.OrganizationResponsible{},
 	)
 	if err != nil {

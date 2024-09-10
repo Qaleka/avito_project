@@ -7,3 +7,7 @@ import (
 type TenderOutput struct {
 	Tenders []ds.Tender `json:"tenders"`
 }
+
+type TenderStatusOutput struct {
+	Status string `json:"status"`
+}

@@ -30,11 +30,13 @@ func (app *Application) Run() {
 	//Тендеры
 	r.GET("/api/tenders", app.GetAllTenders)
 	r.POST("/api/tenders/new", app.AddTender)
-	// r.GET("/api/tenders/my", app.GetTender)
-	// r.PUT("/api/tenders/:tender_id/edit", app.ChangeTender)
+	r.GET("/api/tenders/my", app.GetTender)
+	r.GET("/api/tenders/:tender_id/status", app.GetTenderStatus)
+	r.PUT("/api/tenders/:tender_id/status", app.ChangeTenderStatus)
+	r.PUT("/api/tenders/:tender_id/edit", app.ChangeTender)
 	// r.PUT("/api/tenders/:tender_id/rollback/:version", app.RollbackTender)
 	//Предложения
-	// r.POST("/api/bids/new", app.AddBid)
+	r.POST("/api/bids/new", app.AddBid)
 	// r.GET("/api/bids/my", app.GetBid)
 	// r.GET("/api/bids/:tender_id/list", app.GetBidTenders)
 	// r.PUT("/api/bids/:bid_id/edit", app.ChangeBid)
@@ -42,7 +44,7 @@ func (app *Application) Run() {
 	//Отзывы
 	// r.GET("/api/bids/:tender_id/reviews", app.GetBidsReviews)
 
-	r.Run("localhost:7000") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("localhost:8080") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
 }
 
@@ -55,7 +57,6 @@ func New() (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	app.repo, err = repository.New(dsn.FromEnv())
 	if err != nil {
 		return nil, err
