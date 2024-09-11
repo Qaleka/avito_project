@@ -46,12 +46,12 @@ const CLOSED string = "Closed"
 
 type Tender struct {
 	ID             string         `gorm:"primaryKey;default:gen_random_uuid()" json:"id" binding:"-"`
-	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"required"`
-	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"required"`
-	ServiceType    string  `gorm:"type:string;not null" form:"service_type" json:"service_type" binding:"required"`
-	Status         string `gorm:"type:string;not null" form:"status" json:"status" binding:"required"`
-	OrganizationID string         `gorm:"not null" form:"organization_id" json:"organization_id" binding:"required"`
-	CreatorUsername string      `gorm:"size:50;not null" form:"creator_username" json:"creator_username" binding:"required"`
+	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"-"`
+	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"-"`
+	ServiceType    string  `gorm:"type:string;not null" form:"service_type" json:"service_type" binding:"-"`
+	Status         string `gorm:"type:string;not null" form:"status" json:"status" binding:"-"`
+	OrganizationID string         `gorm:"not null" form:"organization_id" json:"organization_id" binding:"-"`
+	CreatorUsername string      `gorm:"size:50;not null" form:"creator_username" json:"creator_username" binding:"-"`
 	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
 	UpdatedAt   time.Time       `gorm:"type:timestamp" json:"updated_at"`
 	// Связь с организацией
@@ -78,6 +78,6 @@ type Bid struct {
 	UpdatedAt   time.Time       `gorm:"type:timestamp" json:"updated_at"`
 
 	// Связь с тендером
-	Tender        Tender       `gorm:"foreignKey:TenderID;constraint:OnDelete:CASCADE" json:"tender"`
-	Organization  Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"organization"`
+	Tender        Tender       `gorm:"foreignKey:TenderID;constraint:OnDelete:CASCADE" json:"-"`
+	Organization  Organization `gorm:"foreignKey:OrganizationID;constraint:OnDelete:CASCADE" json:"-"`
 }

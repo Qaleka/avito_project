@@ -45,3 +45,21 @@ func (app *Application) AddBid(c *gin.Context) {
 
 	c.JSON(http.StatusOK, bid)
 }
+
+func (app *Application) GetBid(c *gin.Context) {
+	var request schemes.GetUserBidsRequest
+	if err := c.ShouldBind(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат запроса или его параметры: " + err.Error(),
+		})
+	}
+	bids, err := app.repo.GetUserBids(request.Limit, request.Offset, request.Username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, bids)
+}

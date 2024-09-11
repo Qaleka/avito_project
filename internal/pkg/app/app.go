@@ -37,14 +37,14 @@ func (app *Application) Run() {
 	// r.PUT("/api/tenders/:tender_id/rollback/:version", app.RollbackTender)
 	//Предложения
 	r.POST("/api/bids/new", app.AddBid)
-	// r.GET("/api/bids/my", app.GetBid)
+	r.GET("/api/bids/my", app.GetBid)
 	// r.GET("/api/bids/:tender_id/list", app.GetBidTenders)
 	// r.PUT("/api/bids/:bid_id/edit", app.ChangeBid)
 	// r.PUT("/api/bids/:bid_id/rollback/:version", app.RollbackBid)
 	//Отзывы
 	// r.GET("/api/bids/:tender_id/reviews", app.GetBidsReviews)
 
-	r.Run("localhost:8080") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("localhost:80") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
 }
 

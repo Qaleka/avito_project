@@ -53,3 +53,9 @@ type ChangeTenderRequest struct {
 type AddBidRequest struct {
 	ds.Bid
 }
+
+type GetUserBidsRequest struct {
+	Username string `form:"username"`
+	Limit int `form:"limit"`
+	Offset int `form:"offset"`
+}
