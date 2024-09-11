@@ -5,14 +5,16 @@ import (
 	"errors"
 	// "strings"
 	"fmt"
+
 	"gorm.io/gorm"
 
 	"avito_project/internal/app/ds"
+	"avito_project/internal/app/schemes"
 )
 
 func (r *Repository) GetAllTenders(serviceType string, limit int, offset int) ([]ds.Tender, error) {
 	var tenders []ds.Tender
-	if serviceType != "Construction" && serviceType != "Delivery" && serviceType != "Manufacture" {
+	if serviceType != ds.COSTRUCTION && serviceType != ds.DELIVERY && serviceType != ds.MANUFACTURE && serviceType!= "" {
 		return nil, fmt.Errorf("введен некоректный сервис: %s", serviceType)
 	}
 	query := r.db.Where("service_type LIKE ?", "%" + serviceType + "%").Order("name ASC")
@@ -28,20 +30,43 @@ func (r *Repository) GetAllTenders(serviceType string, limit int, offset int) ([
 	return tenders, nil
 }
 
-func (r *Repository) AddTender(tender *ds.Tender) error {
+func (r *Repository) AddTender(tender *ds.Tender, request schemes.AddTenderRequest) error {
 	var employee ds.Employee
-	err := r.db.Where("username = ?", tender.CreatorUsername).First(&employee).Error
-	if err != nil {
+	if err := r.db.Where("username = ?", request.CreatorUsername).First(&employee).Error; err != nil {
 		if gorm.ErrRecordNotFound == err {
-			return fmt.Errorf("пользователь с именем '%s' не найден", tender.CreatorUsername)
+			return fmt.Errorf("пользователь не найден")
 		}
 		return err
 	}
 
-	err = r.db.Create(&tender).Error
-	if err != nil {
+	var organization ds.Organization
+	if err := r.db.Where("id = ?", request.OrganizationID).First(&organization).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return fmt.Errorf("организация не найдена")
+		}
 		return err
 	}
+
+	var orgResp ds.OrganizationResponsible
+	if err := r.db.Where("organization_id = ? AND user_id = ?", request.OrganizationID, employee.ID).First(&orgResp).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return fmt.Errorf("организация не совпадает")
+		}
+		return err
+	}
+
+	tender.Name = request.Name
+	tender.Description = request.Description
+	tender.ServiceType = request.ServiceType
+	tender.OrganizationID = request.OrganizationID
+	tender.CreatorID = employee.ID
+	tender.Status = ds.CREATED
+	tender.Version = 1
+
+	if err := r.db.Create(&tender).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -63,7 +88,7 @@ func (r *Repository) GetUserTenders(limit int, offset int, username string) ([]d
 		}
 		return nil, err
 	}
-	query := r.db.Where("creator_username = ?",username).Order("name ASC")
+	query := r.db.Where("creator_id = ?",employee.ID).Order("name ASC")
 	if limit > 0 {
 		query = r.db.Limit(limit)
 	}
@@ -79,31 +104,56 @@ func (r *Repository) GetUserTenders(limit int, offset int, username string) ([]d
 func (r *Repository) GetTenderStatus(tender_id string, username string) (string, error) {
 	var status string
 	var employee ds.Employee
-	err := r.db.Where("username = ?", username).First(&employee).Error
-	if err != nil {
+	var tender ds.Tender
+
+	if username != "" {
+		err := r.db.Where("username = ?", username).First(&employee).Error
+		if err != nil {
+			if gorm.ErrRecordNotFound == err {
+				return "", fmt.Errorf("пользователь не найден")
+			}
+			return "", err
+		}
+	}
+
+	// Проверка существования тендера по tender_id
+	if err := r.db.Where("id = ?", tender_id).First(&tender).Error; err != nil {
 		if gorm.ErrRecordNotFound == err {
-			return "", fmt.Errorf("пользователь с именем '%s' не найден", username)
+			return "", fmt.Errorf("тендер не найден")
 		}
 		return "", err
 	}
-	query := r.db.Model(&ds.Tender{}).Select("status").Where("id = ?", tender_id)
-	if username != "" {
-		query = query.Where("creator_username = ?", username)
+
+	// Проверка прав доступа: если пользователь указан, проверяем, совпадает ли его ID с creator_id тендера
+	if username != "" && tender.CreatorID != employee.ID {
+		return "", fmt.Errorf("нет права доступа")
 	}
-	if err := query.Row().Scan(&status); err != nil {
-		return "", fmt.Errorf("тендер с id '%s' не найден", tender_id)
+
+	// Получение статуса тендера
+	err := r.db.Model(&ds.Tender{}).Select("status").Where("id = ?", tender_id).Row().Scan(&status)
+	if err != nil {
+		return "", err
 	}
 
 	return status, nil
 }
 
-func (r *Repository) GetTenderById(tender_id string, username string) (*ds.Tender, error) {
-	tender := &ds.Tender{ID: tender_id}
-	err := r.db.First(tender, "creator_username = ?", username).Error
-	if err != nil {
+func (r *Repository) GetTenderById(tender_id string, user_id string) (*ds.Tender, error) {
+	var tender ds.Tender
+
+	if err := r.db.Where("id = ?", tender_id).First(&tender).Error; err != nil {
 		return nil, fmt.Errorf("тендер с id '%s' не найден", tender_id)
 	}
-	return tender, nil
+
+	var orgResp ds.OrganizationResponsible
+	if err := r.db.Where("organization_id = ? AND user_id = ?", tender.OrganizationID, user_id).First(&orgResp).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return nil, fmt.Errorf("организация не совпадает")
+		}
+		return nil, err
+	}
+
+	return &tender, nil
 }
 
 func (r *Repository) GetUserByUsername(username string) (*ds.Employee, error) {
