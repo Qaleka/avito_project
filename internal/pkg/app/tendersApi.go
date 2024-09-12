@@ -293,7 +293,7 @@ func (app *Application) ChangeTender(c *gin.Context) {
 	if request.Parameters.Description != "" {
 		tender.Description = request.Parameters.Description
 	}
-
+	tender.Version++
 	if err := app.repo.SaveTender(tender); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении тендера",

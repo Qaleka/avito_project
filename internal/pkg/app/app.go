@@ -44,12 +44,13 @@ func (app *Application) Run() {
 	r.GET("/api/bids/:bidId/status", app.GetBidStatus)
 	r.PUT("/api/bids/:bidId/status", app.ChangeBidStatus)
 	r.PATCH("/api/bids/:bidId/edit", app.ChangeBid)
-	r.PUT("/api/bids/bidId/submit", app.SubmitBid)
+	r.PUT("/api/bids/:bidId/submit_decision", app.SubmitBid)
 	// r.PUT("/api/bids/:bid_id/rollback/:version", app.RollbackBid)
 	//Отзывы
-	// r.GET("/api/bids/:tender_id/reviews", app.GetBidsReviews)
+	// r.PUT("/api/bids/:bidId/feedback",app.GetFeedback)
+	// r.GET("/api/bids/:bidId/reviews", app.GetReviews)
 
-	r.Run(fmt.Sprintf("%s:%d", app.config.ServiceHost, app.config.ServicePort)) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run(fmt.Sprintf("%s", app.config.ServerAddress)) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
 }
 

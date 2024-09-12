@@ -1,7 +1,7 @@
 package config
 
 import (
-	"os"
+	
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -12,38 +12,30 @@ import (
 // Содержит все конфигурационные данные о сервисе;
 // автоподгружается при изменении исходного файла
 type Config struct {
-	ServiceHost   string
-	ServicePort   int
+	ServerAddress string `mapstructure:"SERVER_ADDRESS"` // Новый параметр для адреса и порта
 }
 
-// NewConfig Создаёт новый объект конфигурации, загружая данные из файла конфигурации
+// NewConfig Создаёт новый объект конфигурации, загружая данные из файла конфигурации и переменных окружения
 func NewConfig() (*Config, error) {
 	var err error
 
-	configName := "config"
-	_ = godotenv.Load()
-	if os.Getenv("CONFIG_NAME") != "" {
-		configName = os.Getenv("CONFIG_NAME")
-	}
+	// Загружаем переменные окружения из .env
+	_ = godotenv.Load() // Загружаем переменные окружения из файла .env
 
-	viper.SetConfigName(configName)
-	viper.SetConfigType("toml")
-	viper.AddConfigPath("config")
-	viper.AddConfigPath(".")
-	viper.WatchConfig()
+	viper.AutomaticEnv() // Автоматически загружаем переменные окружения
 
-	err = viper.ReadInConfig()
-	if err != nil {
-		return nil, err
-	}
+	// Читаем значение SERVER_ADDRESS из .env
+	viper.BindEnv("SERVER_ADDRESS", "SERVER_ADDRESS")
+
+	// Устанавливаем значение по умолчанию для SERVER_ADDRESS
+	viper.SetDefault("SERVER_ADDRESS", "0.0.0.0:8080")
 
 	cfg := &Config{}
-	err = viper.Unmarshal(cfg)
+	err = viper.Unmarshal(cfg) // Распаковка значений в структуру Config
 	if err != nil {
 		return nil, err
 	}
 
 	log.Info("config parsed")
-
 	return cfg, nil
 }

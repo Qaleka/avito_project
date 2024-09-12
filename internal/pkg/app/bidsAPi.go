@@ -223,7 +223,7 @@ func (app *Application) ChangeBidStatus(c *gin.Context) {
 
 	if bid.AuthorID != user.ID {
 		c.JSON(http.StatusForbidden, gin.H{
-			"reason": fmt.Sprintf("Пользователь '%s' не имеет прав на редактирование тендера", request.Parameters.Username),
+			"reason": fmt.Sprintf("Пользователь '%s' не имеет прав на редактирование предложения", request.Parameters.Username),
 		})
 		return
 	}
@@ -298,7 +298,7 @@ func (app *Application) ChangeBid(c *gin.Context) {
 	if request.Parameters.Description != "" {
 		bid.Description = request.Parameters.Description
 	}
-
+	bid.Version++
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении тендера",
@@ -353,13 +353,28 @@ func (app *Application) SubmitBid(c *gin.Context) {
 		})
 		return
 	}
+	
 	if request.Query.Decision != "Approved" && request.Query.Decision != "Rejected" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Некоректное решение: '%s'", request.Query.Decision),
 		})
 		return
 	}
-	tender := ds.Tender{ID:bid.TenderID}
+	tender, err := app.repo.GetTenderById(bid.TenderID, bid.AuthorID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	if tender.Status == ds.CLOSED {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": fmt.Sprintf("Тендер уже закрыт"),
+		})
+		return
+	}
+
 	if request.Query.Decision == "Approved" {
 		bid.Status = ds.PUBLISHED
 		tender.Status = ds.CLOSED
@@ -373,7 +388,7 @@ func (app *Application) SubmitBid(c *gin.Context) {
 		return
 	}
 
-	if err := app.repo.SaveTender(&tender); err != nil {
+	if err := app.repo.SaveTender(tender); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении тендера",
 		})
