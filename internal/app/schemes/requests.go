@@ -74,7 +74,7 @@ type GetUserBidsRequest struct {
 
 type GetTenderBidsRequest struct {
 	URI struct {
-		TenderId string `uri:"tenderId" binding:"required"`
+		TenderId string `uri:"bidId" binding:"required"`
 	}
 	Query struct {
 		Username string `form:"username" binding:"required"`
@@ -108,5 +108,15 @@ type ChangeBidRequest struct {
 	}
 	URI struct {
 		BidId string `uri:"bidId" binding:"required"`
+	}
+}
+
+type SubmitBidRequest struct {
+	URI struct {
+		BidId string `uri:"bidId" binding:"required"`
+	}
+	Query struct {
+		Decision string `form:"decision" binding:"required"`
+		Username string `form:"username" binding:"required"`
 	}
 }

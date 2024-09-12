@@ -308,3 +308,76 @@ func (app *Application) ChangeBid(c *gin.Context) {
 
 	c.JSON(http.StatusOK, bid)
 }
+
+func (app *Application) SubmitBid(c *gin.Context) {
+	var request schemes.SubmitBidRequest
+
+	if err := c.ShouldBindUri(&request.URI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат URI параметров: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.ShouldBindQuery(&request.Query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат параметров тела запроса: " + err.Error(),
+		})
+		return
+	}
+
+	user, err := app.repo.GetUserByUsername(request.Query.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при проверке пользователя",
+		})
+		return
+	}
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не найден", request.Query.Username),
+		})
+		return
+	}
+
+	bid, err := app.repo.SubmitBid(request.URI.BidId, user.ID)
+	if err != nil {
+		if err.Error() == "нет прав"  {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"reason": fmt.Sprintf("Пользователь '%s' не имеет прав на решение по предложению", request.Query.Username),
+			})
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": err.Error(),
+		})
+		return
+	}
+	if request.Query.Decision != "Approved" && request.Query.Decision != "Rejected" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": fmt.Sprintf("Некоректное решение: '%s'", request.Query.Decision),
+		})
+		return
+	}
+	tender := ds.Tender{ID:bid.TenderID}
+	if request.Query.Decision == "Approved" {
+		bid.Status = ds.PUBLISHED
+		tender.Status = ds.CLOSED
+	} else if request.Query.Decision == "Rejected" {
+		bid.Status = ds.CANCELED
+	}
+	if err := app.repo.SaveBid(bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении тендера",
+		})
+		return
+	}
+
+	if err := app.repo.SaveTender(&tender); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении тендера",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, bid)
+}

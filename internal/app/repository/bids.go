@@ -169,6 +169,24 @@ func (r *Repository) GetBidById(bid_id string, user_id string) (*ds.Bid, error) 
 	if err := r.db.Where("id = ?", bid_id).First(&bid).Error; err != nil {
 		return nil, fmt.Errorf("предложение с id '%s' не найден", bid_id)
 	}
+	
+	return &bid, nil
+}
 
+func (r *Repository) SubmitBid(bid_id string, user_id string) (*ds.Bid, error) {
+	var bid ds.Bid
+	var tender ds.Tender
+
+	if err := r.db.Where("id = ?", bid_id).First(&bid).Error; err != nil {
+		return nil, fmt.Errorf("предложение с id '%s' не найден", bid_id)
+	}
+	
+	if err := r.db.Where("id = ?", bid.TenderID).First(&tender).Error; err != nil {
+		return nil, fmt.Errorf("тендер с id '%s' не найден", bid_id)
+	}
+
+	if tender.CreatorID != user_id {
+		return nil, fmt.Errorf("нет прав")
+	}
 	return &bid, nil
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 
@@ -24,7 +25,7 @@ func (app *Application) Run() {
 	r := gin.Default()
 
 	r.Use(ErrorHandler())
-
+	
 	//Пинг
 	
 	r.GET("/api/ping", app.Ping)    
@@ -39,15 +40,16 @@ func (app *Application) Run() {
 	//Предложения
 	r.POST("/api/bids/new", app.AddBid)
 	r.GET("/api/bids/my", app.GetBid)
-	// r.GET("/api/bids/:tenderId/list", app.GetTenderBids)
+	r.GET("/api/bids/:bidId/list", app.GetTenderBids)
 	r.GET("/api/bids/:bidId/status", app.GetBidStatus)
 	r.PUT("/api/bids/:bidId/status", app.ChangeBidStatus)
 	r.PATCH("/api/bids/:bidId/edit", app.ChangeBid)
+	r.PUT("/api/bids/bidId/submit", app.SubmitBid)
 	// r.PUT("/api/bids/:bid_id/rollback/:version", app.RollbackBid)
 	//Отзывы
 	// r.GET("/api/bids/:tender_id/reviews", app.GetBidsReviews)
 
-	r.Run("localhost:8080") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run(fmt.Sprintf("%s:%d", app.config.ServiceHost, app.config.ServicePort)) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
 }
 
