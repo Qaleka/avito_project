@@ -59,6 +59,13 @@ func (app *Application) AddBid(c *gin.Context) {
 		return
 	}
 
+	if err := app.repo.SaveBidVersion(&bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии предложения: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, bid)
 }
 
@@ -306,6 +313,13 @@ func (app *Application) ChangeBid(c *gin.Context) {
 		return
 	}
 
+	if err := app.repo.SaveBidVersion(bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии предложения: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, bid)
 }
 
@@ -391,6 +405,154 @@ func (app *Application) SubmitBid(c *gin.Context) {
 	if err := app.repo.SaveTender(tender); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении тендера",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, bid)
+}
+
+func (app *Application) ChangeBidVersion(c *gin.Context) {
+	var request schemes.ChangeBidVersionRequest
+
+	if err := c.ShouldBindUri(&request.URI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат URI параметров: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.ShouldBindQuery(&request.Query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат Query параметров: " + err.Error(),
+		})
+		return
+	}
+
+	// Проверка существования пользователя
+	user, err := app.repo.GetUserByUsername(request.Query.Username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": "Ошибка при проверке пользователя",
+		})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не найден", request.Query.Username),
+		})
+		return
+	}
+
+	// Поиск нужной версии тендера
+	bidVersion, err := app.repo.GetBidNewVersion(request.URI.BidId, request.URI.Version)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": fmt.Sprintf("Предложение с id '%s' версии '%d' не найдено", request.URI.BidId, request.URI.Version),
+		})
+		return
+	}
+
+	bid, err := app.repo.GetBidById(request.URI.BidId, user.ID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"reason": err,
+		})
+		return
+	}
+
+	if bid.AuthorID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"reason": "Пользователь не имеет доступа к этому предложению",
+		})
+		return
+	}
+
+	// Обновляем параметры тендера
+	bid.Name = bidVersion.Name
+	bid.Description = bidVersion.Description
+	bid.AuthorID = bidVersion.AuthorID
+	bid.AuthorType = bidVersion.AuthorType
+	bid.Status = bidVersion.Status
+	bid.Version++
+	// Сохраняем изменения
+	if err := app.repo.SaveBid(bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Не удалось сохранить изменения предложения",
+		})
+		return
+	}
+
+	if err := app.repo.SaveBidVersion(bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии предложения: " + err.Error(),
+		})
+		return
+	}
+
+	// Возвращаем успешный ответ
+	c.JSON(http.StatusOK, bid)
+}
+
+func (app *Application) AddBidFeedback(c *gin.Context) {
+	var request schemes.AddBidFeedback
+
+	
+	if err := c.ShouldBindUri(&request.URI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат URI параметров: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.ShouldBindQuery(&request.Query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат Query параметров: " + err.Error(),
+		})
+		return
+	}
+
+	// Проверка существования пользователя
+	user, err := app.repo.GetUserByUsername(request.Query.Username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": "Ошибка при проверке пользователя",
+		})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не найден", request.Query.Username),
+		})
+		return
+	}
+
+	bid, err := app.repo.GetBidById(request.URI.BidId, user.ID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": err,
+		})
+		return
+	}
+
+	feedback,err := app.repo.AddBidFeedback(bid, request.Query.BidFeedback, user.ID)
+	if err != nil {
+		if err.Error() == "не создатель тендера" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"reason": fmt.Sprintf("Пользователь '%s' не является автором тендера, на который пишется отвзы", user.Username),
+			})
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": err,
+		})
+		return
+	}
+	err = app.repo.SaveFeedback(feedback)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": err,
 		})
 		return
 	}

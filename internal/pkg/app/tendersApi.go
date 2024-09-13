@@ -74,6 +74,13 @@ func (app *Application) AddTender(c *gin.Context) {
 		return
 	}
 
+	if err := app.repo.SaveTenderVersion(&tender); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии тендера: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, tender)
 }
 
@@ -301,5 +308,89 @@ func (app *Application) ChangeTender(c *gin.Context) {
 		return
 	}
 
+	// Сохраняем версию тендера
+	if err := app.repo.SaveTenderVersion(tender); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии тендера: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, tender)
+}
+
+func (app *Application) ChangeTenderVersion(c *gin.Context) {
+	var request schemes.ChangeTenderVersionRequest
+
+	if err := c.ShouldBindUri(&request.URI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат URI параметров: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.ShouldBindQuery(&request.Query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат Query параметров: " + err.Error(),
+		})
+		return
+	}
+
+	// Проверка существования пользователя
+	user, err := app.repo.GetUserByUsername(request.Query.Username)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": "Ошибка при проверке пользователя",
+		})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не найден", request.Query.Username),
+		})
+		return
+	}
+
+	// Поиск нужной версии тендера
+	tenderVersion, err := app.repo.GetTenderNewVersion(request.URI.TenderId, request.URI.Version)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": fmt.Sprintf("Тендер с id '%s' версии '%d' не найден", request.URI.TenderId, request.URI.Version),
+		})
+		return
+	}
+
+	// Получаем текущий тендер и проверяем доступ пользователя
+	tender, err := app.repo.GetTenderById(request.URI.TenderId, user.ID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"reason": "Пользователь не имеет доступа к этому тендеру",
+		})
+		return
+	}
+
+	// Обновляем параметры тендера
+	tender.Name = tenderVersion.Name
+	tender.Description = tenderVersion.Description
+	tender.ServiceType = tenderVersion.ServiceType
+	tender.Status = tenderVersion.Status
+	tender.Version++
+	// Сохраняем изменения
+	if err := app.repo.SaveTender(tender); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Не удалось сохранить изменения тендера",
+		})
+		return
+	}
+
+	if err := app.repo.SaveTenderVersion(tender); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии тендера: " + err.Error(),
+		})
+		return
+	}
+
+	// Возвращаем успешный ответ
 	c.JSON(http.StatusOK, tender)
 }

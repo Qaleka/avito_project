@@ -36,7 +36,7 @@ func (app *Application) Run() {
 	r.GET("/api/tenders/:tenderId/status", app.GetTenderStatus)
 	r.PUT("/api/tenders/:tenderId/status", app.ChangeTenderStatus)
 	r.PATCH("/api/tenders/:tenderId/edit", app.ChangeTender)
-	// r.PUT("/api/tenders/:tender_id/rollback/:version", app.RollbackTender)
+	r.PUT("/api/tenders/:tenderId/rollback/:version", app.ChangeTenderVersion)
 	//Предложения
 	r.POST("/api/bids/new", app.AddBid)
 	r.GET("/api/bids/my", app.GetBid)
@@ -45,9 +45,9 @@ func (app *Application) Run() {
 	r.PUT("/api/bids/:bidId/status", app.ChangeBidStatus)
 	r.PATCH("/api/bids/:bidId/edit", app.ChangeBid)
 	r.PUT("/api/bids/:bidId/submit_decision", app.SubmitBid)
-	// r.PUT("/api/bids/:bid_id/rollback/:version", app.RollbackBid)
+	r.PUT("/api/bids/:bidId/rollback/:version", app.ChangeBidVersion)
 	//Отзывы
-	// r.PUT("/api/bids/:bidId/feedback",app.GetFeedback)
+	r.PUT("/api/bids/:bidId/feedback",app.AddBidFeedback)
 	// r.GET("/api/bids/:bidId/reviews", app.GetReviews)
 
 	r.Run(fmt.Sprintf("%s", app.config.ServerAddress)) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

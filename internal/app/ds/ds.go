@@ -9,7 +9,7 @@ type Employee struct {
 	Username  string    `gorm:"size:50;unique;not null" json:"username"`
 	FirstName string    `gorm:"size:50" json:"first_name"`
 	LastName  string    `gorm:"size:50" json:"last_name"`
-	CreatedAt time.Time `gorm:"type:timestamp" json:"created_at"`
+	CreatedAt time.Time `gorm:"type:timestamp" json:"createdAt"`
 }
 
 const IE string = "IE"
@@ -21,7 +21,7 @@ type Organization struct {
 	Name        string          `gorm:"size:100;not null" json:"name"`
 	Description string          `gorm:"type:text" json:"description"`
 	Type        string `gorm:"type:string" json:"type"`
-	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"createdAt"`
 }
 
 type OrganizationResponsible struct {
@@ -52,7 +52,7 @@ type Tender struct {
 	OrganizationID string         `gorm:"not null" form:"organization_id" json:"organizationId" binding:"-"`
 	Version 		int `gorm:"not null" form:"version" json:"version" binding:"-"`
 	CreatorID string      `gorm:"size:50;not null" form:"creator_id" json:"-" binding:"-"`
-	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"createdAt"`
 
 	// Связь с организацией
 	Employee Employee `gorm:"foreignKey:CreatorID" json:"-" binding:"-"`
@@ -69,9 +69,46 @@ type Bid struct {
 	AuthorType     string            `gorm:"not null" json:"authorType"`
 	AuthorID       string            `gorm:"not null" json:"authorId"`
 	Version 		int `gorm:"not null" form:"version" json:"version" binding:"-"`
-	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"createdAt"`
 
 	// Связь с тендером
 	Employee        Employee       `gorm:"foreignKey:AuthorID" json:"-"`
 	Tender  Tender `gorm:"foreignKey:TenderID" json:"-"`
+}
+
+type TenderVersion struct {
+	ID             string         `gorm:"primaryKey;default:gen_random_uuid()" json:"id" binding:"-"`
+	TenderId	   string        `gorm:"not null" json:"-"`
+	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"-"`
+	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"-"`
+	ServiceType    string  `gorm:"type:string;not null" form:"service_type" json:"serviceType" binding:"-"`
+	Status         string `gorm:"type:string;not null" form:"status" json:"status" binding:"-"`
+	OrganizationID string         `gorm:"not null" form:"organization_id" json:"organizationId" binding:"-"`
+	Version 		int `gorm:"not null" form:"version" json:"version" binding:"-"`
+	CreatorID string      `gorm:"size:50;not null" form:"creator_id" json:"-" binding:"-"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"createdAt"`
+}
+
+type BidVersion struct {
+	ID             string         `gorm:"primaryKey;default:gen_random_uuid()" json:"id" binding:"-"`
+	BidId	   string        `gorm:"not null" json:"-"`
+	Name           string       `gorm:"size:100;not null" form:"name" json:"name" binding:"-"`
+	Description    string       `gorm:"type:text" form:"description" json:"description" binding:"-"`
+	Status         string `gorm:"type:string;not null" form:"status" json:"status" binding:"-"`
+	TenderId string `gorm:"not null" json:"-"`
+	AuthorType string `gorm:"not null" json:"authorType"`
+	AuthorID string `gorm:"not null" json:"authorId"`
+	Version int `gorm:"not null" form:"version" json:"version" binding:"-"`
+	CreatedAt   time.Time       `gorm:"type:timestamp" json:"created_at"`
+}
+
+type Feedback struct {
+	ID string `gorm:"primaryKey;default:gen_random_uuid()" json:"id" binding:"-"`
+	BidId string `gorm:"not null" json:"-"`
+	Description string `gorm:"not null" form:"description" json:"description"`
+	AuthorID string `gorm:"not null" json:"-"`
+	CreatedAt time.Time       `gorm:"type:timestamp" json:"createdAt"`
+
+	Employee        Employee       `gorm:"foreignKey:AuthorID" json:"-"`
+	Bid Bid `gorm:"foreignKey:BidId" json:"-"`
 }

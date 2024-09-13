@@ -168,3 +168,36 @@ func (r *Repository) GetUserByUsername(username string) (*ds.Employee, error) {
 
 	return &user, nil
 }
+
+func (r *Repository) GetTenderNewVersion(tenderId string, version int) (*ds.TenderVersion, error) {
+	var tenderVersion ds.TenderVersion
+	if err := r.db.Where("tender_id = ? AND version = ?", tenderId, version).First(&tenderVersion).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return nil, fmt.Errorf("версия тендера не найдена")
+		}
+		return nil, err
+	}
+	return &tenderVersion, nil
+}
+
+func (r *Repository) SaveTenderVersion(tender *ds.Tender) error {
+	tenderVersion := ds.TenderVersion{
+		TenderId: tender.ID,
+		Version:     tender.Version,
+		Name:        tender.Name,
+		Description: tender.Description,
+		ServiceType: tender.ServiceType,
+		Status:		 tender.Status,
+		OrganizationID: tender.OrganizationID,
+		CreatorID: tender.CreatorID,
+		CreatedAt:   tender.CreatedAt,
+	}
+	if err := r.db.Create(&tenderVersion).Error; err != nil {
+		return err
+	}
+	err := r.db.Save(tenderVersion).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

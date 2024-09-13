@@ -120,3 +120,33 @@ type SubmitBidRequest struct {
 		Username string `form:"username" binding:"required"`
 	}
 }
+
+type ChangeTenderVersionRequest struct {
+	URI struct {
+		TenderId string `uri:"tenderId" binding:"required"`
+		Version  int    `uri:"version" binding:"required"`
+	}
+	Query struct {
+		Username string `form:"username" binding:"required"`
+	}
+}
+
+type ChangeBidVersionRequest struct {
+	URI struct {
+		BidId string `uri:"bidId" binding:"required"`
+		Version  int    `uri:"version" binding:"required"`
+	}
+	Query struct {
+		Username string `form:"username" binding:"required"`
+	}
+}
+
+type AddBidFeedback struct {
+	URI struct {
+		BidId string `uri:"bidId" binding:"required"`
+	}
+	Query struct {
+		Username string `form:"username" binding:"required"`
+		BidFeedback  string    `uri:"bidFeedback" binding:"required"`
+	}
+}

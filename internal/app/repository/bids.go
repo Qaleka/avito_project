@@ -5,7 +5,7 @@ import (
 	// "errors"
 	// "strings"
 	"fmt"
-
+	"time"
 	"gorm.io/gorm"
 
 	"avito_project/internal/app/ds"
@@ -189,4 +189,74 @@ func (r *Repository) SubmitBid(bid_id string, user_id string) (*ds.Bid, error) {
 		return nil, fmt.Errorf("нет прав")
 	}
 	return &bid, nil
+}
+
+func (r *Repository) GetBidNewVersion(bidId string, version int) (*ds.BidVersion, error) {
+	var bidVersion ds.BidVersion
+	if err := r.db.Where("bid_id = ? AND version = ?", bidId, version).First(&bidVersion).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return nil, fmt.Errorf("версия предложения не найдена")
+		}
+		return nil, err
+	}
+	return &bidVersion, nil
+}
+
+func (r *Repository) SaveBidVersion(bid *ds.Bid) error {
+	BidVersion := ds.BidVersion{
+		BidId: bid.ID,
+		Version:     bid.Version,
+		Name:        bid.Name,
+		Description: bid.Description,
+		AuthorID: bid.AuthorID,
+		Status:		 bid.Status,
+		AuthorType: bid.AuthorType,
+		TenderId: bid.TenderID,
+		CreatedAt:   bid.CreatedAt,
+	}
+	if err := r.db.Create(&BidVersion).Error; err != nil {
+		return err
+	}
+	err := r.db.Save(BidVersion).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Repository) AddBidFeedback(bid *ds.Bid, feedBack string, userId string) (*ds.Feedback, error) {
+	var bidFeedback ds.Feedback
+	var tender ds.Tender
+	bidFeedback.BidId = bid.ID
+	bidFeedback.Description = feedBack
+	if err := r.db.Where("id = ?", bid.TenderID).First(&tender).Error; err != nil {
+		if gorm.ErrRecordNotFound == err {
+			return nil, fmt.Errorf("тендер не найден")
+		}
+		return nil, err
+	}
+	if tender.CreatorID != userId {
+		return nil, fmt.Errorf("не создатель тендера")
+	}
+	bidFeedback.AuthorID = userId
+	bidFeedback.CreatedAt = time.Now()
+	if err := r.db.Create(&bidFeedback).Error; err != nil {
+		return nil, err
+	}
+	err := r.db.Save(bidFeedback).Error
+	if err != nil {
+		return nil,err
+	}
+	return &bidFeedback, nil
+}
+
+func (r *Repository) SaveFeedback(bidFeedback *ds.Feedback) error {
+	if err := r.db.Create(&bidFeedback).Error; err != nil {
+		return err
+	}
+	err := r.db.Save(bidFeedback).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
