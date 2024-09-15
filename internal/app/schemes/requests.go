@@ -147,6 +147,18 @@ type AddBidFeedback struct {
 	}
 	Query struct {
 		Username string `form:"username" binding:"required"`
-		BidFeedback  string    `uri:"bidFeedback" binding:"required"`
+		BidFeedback  string    `form:"bidFeedback" binding:"required"`
+	}
+}
+
+type GetReviewsRequest struct {
+	URI struct {
+		TenderId string `uri:"bidId" binding:"required"`
+	}
+	Query struct {
+		AuthorUsername  string `form:"authorUsername" binding:"required"`
+		RequesterUsername  string    `form:"requesterUsername" binding:"required"`
+		Limit int `form:"limit"`
+		Offset int `form:"offset"`
 	}
 }

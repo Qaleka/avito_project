@@ -36,14 +36,10 @@ func (app *Application) AddBid(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"reason": "Пользователь с ID '" + request.AuthorID + "' не найден",
 			})
-		case "тендер не найден":
+		case "предложение не найдено":
 			c.JSON(http.StatusNotFound, gin.H{
-				"reason": "Тендер с ID '" + request.TenderId + "' не найден",
+				"reason": "Предложение с ID '" + request.TenderId + "' не найден",
 			})
-		// case "организация не совпадает":
-		// 	c.JSON(http.StatusForbidden, gin.H{
-		// 		"reason": "Пользователь '" + request.CreatorUsername + "' не принадлежит к организации с ID '" + request.OrganizationID + "'",
-		// 	})
 		default:
 			c.JSON(http.StatusBadRequest, gin.H{
 				"reason": err.Error(),
@@ -111,9 +107,9 @@ func (app *Application) GetTenderBids(c *gin.Context) {
 			})
 			return
 		}
-		if err.Error() == "тендер не найден" {
+		if err.Error() == "предложение не найдено" {
 			c.JSON(http.StatusNotFound, gin.H{
-				"reason": fmt.Sprintf("Тендер с id '%s' не найден", request.URI.TenderId),
+				"reason": fmt.Sprintf("Предложение с id '%s' не найдено", request.URI.TenderId),
 			})
 			return
 		}
@@ -148,7 +144,6 @@ func (app *Application) GetBidStatus(c *gin.Context) {
 		return
 	}
 
-	// Получение статуса тендера
 	status, err := app.repo.GetBidStatus(request.BidId, request.Username)
 	if err != nil {
 		if err.Error() == "пользователь не найден" {
@@ -161,27 +156,25 @@ func (app *Application) GetBidStatus(c *gin.Context) {
 				"reason": "Пользователь не имеет прав на доступ к предложению",
 			})
 			return
-		} else if err.Error() == "тендер не найден" {
+		} else if err.Error() == "предложение не найдено" {
 			c.JSON(http.StatusNotFound, gin.H{
 				"reason": fmt.Sprintf("Предложение с id '%s' не найдено", request.BidId),
 			})
 			return
 		}
-		// Общая ошибка
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": err.Error(),
 		})
 		return
 	}
 
-	// Успешный ответ
 	c.JSON(http.StatusOK, status)
 }
 
 func (app *Application) ChangeBidStatus(c *gin.Context) {
 	var request schemes.ChangeBidStatusRequest
 
-	// Обработка URI параметров
 	if err := c.ShouldBindUri(&request.URI); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Неверный формат URI параметров: '%s'", err.Error()),
@@ -189,7 +182,6 @@ func (app *Application) ChangeBidStatus(c *gin.Context) {
 		return
 	}
 
-	// Обработка query параметров
 	if err := c.ShouldBindQuery(&request.Parameters); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Неверный формат параметров запроса: '%s'", err.Error()),
@@ -197,7 +189,6 @@ func (app *Application) ChangeBidStatus(c *gin.Context) {
 		return
 	}
 
-	// Проверка статуса
 	if request.Parameters.Status != ds.CREATED && request.Parameters.Status != ds.PUBLISHED && request.Parameters.Status != ds.CANCELED {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Некорректный статус '%s'", request.Parameters.Status),
@@ -205,7 +196,6 @@ func (app *Application) ChangeBidStatus(c *gin.Context) {
 		return
 	}
 
-	// Проверка пользователя
 	user, err := app.repo.GetUserByUsername(request.Parameters.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -238,7 +228,7 @@ func (app *Application) ChangeBidStatus(c *gin.Context) {
 	bid.Status = request.Parameters.Status
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"reason": "Ошибка при сохранении тендера",
+			"reason": "Ошибка при сохранении предложения",
 		})
 		return
 	}
@@ -308,7 +298,7 @@ func (app *Application) ChangeBid(c *gin.Context) {
 	bid.Version++
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"reason": "Ошибка при сохранении тендера",
+			"reason": "Ошибка при сохранении предложения",
 		})
 		return
 	}
@@ -397,7 +387,7 @@ func (app *Application) SubmitBid(c *gin.Context) {
 	}
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"reason": "Ошибка при сохранении тендера",
+			"reason": "Ошибка при сохранении предложения",
 		})
 		return
 	}
@@ -428,7 +418,7 @@ func (app *Application) ChangeBidVersion(c *gin.Context) {
 		return
 	}
 
-	// Проверка существования пользователя
+
 	user, err := app.repo.GetUserByUsername(request.Query.Username)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -444,7 +434,7 @@ func (app *Application) ChangeBidVersion(c *gin.Context) {
 		return
 	}
 
-	// Поиск нужной версии тендера
+
 	bidVersion, err := app.repo.GetBidNewVersion(request.URI.BidId, request.URI.Version)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -468,14 +458,13 @@ func (app *Application) ChangeBidVersion(c *gin.Context) {
 		return
 	}
 
-	// Обновляем параметры тендера
 	bid.Name = bidVersion.Name
 	bid.Description = bidVersion.Description
 	bid.AuthorID = bidVersion.AuthorID
 	bid.AuthorType = bidVersion.AuthorType
 	bid.Status = bidVersion.Status
 	bid.Version++
-	// Сохраняем изменения
+
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Не удалось сохранить изменения предложения",
@@ -490,7 +479,6 @@ func (app *Application) ChangeBidVersion(c *gin.Context) {
 		return
 	}
 
-	// Возвращаем успешный ответ
 	c.JSON(http.StatusOK, bid)
 }
 
@@ -512,7 +500,6 @@ func (app *Application) AddBidFeedback(c *gin.Context) {
 		return
 	}
 
-	// Проверка существования пользователя
 	user, err := app.repo.GetUserByUsername(request.Query.Username)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -557,4 +544,94 @@ func (app *Application) AddBidFeedback(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, bid)
+}
+
+func (app *Application) GetReviews(c *gin.Context) {
+	var request schemes.GetReviewsRequest
+	if err := c.ShouldBindUri(&request.URI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат URI параметров: " + err.Error(),
+		})
+		return
+	}
+	fmt.Println(request)
+	if err := c.ShouldBindQuery(&request.Query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"reason": "Неверный формат Query параметров: " + err.Error(),
+		})
+		return
+	}
+	fmt.Println(request)
+	requesterUser, err := app.repo.GetUserByUsername(request.Query.RequesterUsername)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при проверке пользователя: " + err.Error(),
+		})
+		return
+	}
+	if requesterUser == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не найден", request.Query.RequesterUsername),
+		})
+		return
+	}
+
+
+	tender, err := app.repo.GetTenderById(request.URI.TenderId, requesterUser.ID)
+	if err != nil {
+		if err.Error() == "организация не совпадает" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"reason": fmt.Sprintf("Пользователь '%s' не принадлежит к организации, связанной с тендером", request.Query.RequesterUsername),
+			})
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{
+			"reason": err.Error(),
+		})
+		return
+	}
+
+	if tender.CreatorID != requesterUser.ID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"reason": fmt.Sprintf("Пользователь '%s' не имеет прав на просмотр отзывов для этого тендера", request.Query.RequesterUsername),
+		})
+		return
+	}
+
+	authorUser, err := app.repo.GetUserByUsername(request.Query.AuthorUsername)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при проверке автора отзывов: " + err.Error(),
+		})
+		return
+	}
+
+	if authorUser == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"reason": fmt.Sprintf("Автор '%s' не найден", request.Query.AuthorUsername),
+		})
+		return
+	}
+
+	bids, err := app.repo.GetBidsByAuthorAndTender(tender.ID, authorUser.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при получении предложений: " + err.Error(),
+		})
+		return
+	}
+
+	var reviews []ds.Feedback
+	for _, bid := range bids {
+		bidReviews, err := app.repo.GetReviewsByBid(bid.ID, request.Query.Limit, request.Query.Offset)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"reason": "Ошибка при получении отзывов: " + err.Error(),
+			})
+			return
+		}
+		reviews = append(reviews, bidReviews...)
+	}
+
+	c.JSON(http.StatusOK, reviews)
 }

@@ -25,6 +25,7 @@ func main() {
 		&ds.OrganizationResponsible{},
 		&ds.TenderVersion{},
 		&ds.BidVersion{},
+		&ds.Feedback{},
 	)
 	if err != nil {
 		panic("cant migrate db")

@@ -48,7 +48,7 @@ func (app *Application) Run() {
 	r.PUT("/api/bids/:bidId/rollback/:version", app.ChangeBidVersion)
 	//Отзывы
 	r.PUT("/api/bids/:bidId/feedback",app.AddBidFeedback)
-	// r.GET("/api/bids/:bidId/reviews", app.GetReviews)
+	r.GET("/api/bids/:bidId/reviews", app.GetReviews)
 
 	r.Run(fmt.Sprintf("%s", app.config.ServerAddress)) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")

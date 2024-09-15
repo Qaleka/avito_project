@@ -120,7 +120,7 @@ func (app *Application) GetTenderStatus(c *gin.Context) {
 		return
 	}
 
-	// Получение статуса тендера
+
 	status, err := app.repo.GetTenderStatus(request.TenderId, request.Username)
 	if err != nil {
 		if err.Error() == "пользователь не найден" {
@@ -139,21 +139,19 @@ func (app *Application) GetTenderStatus(c *gin.Context) {
 			})
 			return
 		}
-		// Общая ошибка
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": err.Error(),
 		})
 		return
 	}
 
-	// Успешный ответ
 	c.JSON(http.StatusOK, status)
 }
 
 func (app *Application) ChangeTenderStatus(c *gin.Context) {
 	var request schemes.ChangeTenderStatusRequest
 
-	// Обработка URI параметров
 	if err := c.ShouldBindUri(&request.URI); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Неверный формат URI параметров: '%s'", err.Error()),
@@ -161,7 +159,6 @@ func (app *Application) ChangeTenderStatus(c *gin.Context) {
 		return
 	}
 
-	// Обработка query параметров
 	if err := c.ShouldBindQuery(&request.Parameters); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Неверный формат параметров запроса: '%s'", err.Error()),
@@ -169,7 +166,6 @@ func (app *Application) ChangeTenderStatus(c *gin.Context) {
 		return
 	}
 
-	// Проверка статуса
 	if request.Parameters.Status != ds.CREATED && request.Parameters.Status != ds.PUBLISHED && request.Parameters.Status != ds.CLOSED {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"reason": fmt.Sprintf("Некорректный статус '%s'", request.Parameters.Status),
@@ -177,7 +173,6 @@ func (app *Application) ChangeTenderStatus(c *gin.Context) {
 		return
 	}
 
-	// Проверка пользователя
 	user, err := app.repo.GetUserByUsername(request.Parameters.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -308,7 +303,7 @@ func (app *Application) ChangeTender(c *gin.Context) {
 		return
 	}
 
-	// Сохраняем версию тендера
+
 	if err := app.repo.SaveTenderVersion(tender); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении версии тендера: " + err.Error(),
@@ -336,7 +331,6 @@ func (app *Application) ChangeTenderVersion(c *gin.Context) {
 		return
 	}
 
-	// Проверка существования пользователя
 	user, err := app.repo.GetUserByUsername(request.Query.Username)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -352,7 +346,7 @@ func (app *Application) ChangeTenderVersion(c *gin.Context) {
 		return
 	}
 
-	// Поиск нужной версии тендера
+
 	tenderVersion, err := app.repo.GetTenderNewVersion(request.URI.TenderId, request.URI.Version)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -361,7 +355,7 @@ func (app *Application) ChangeTenderVersion(c *gin.Context) {
 		return
 	}
 
-	// Получаем текущий тендер и проверяем доступ пользователя
+
 	tender, err := app.repo.GetTenderById(request.URI.TenderId, user.ID)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{
@@ -370,13 +364,13 @@ func (app *Application) ChangeTenderVersion(c *gin.Context) {
 		return
 	}
 
-	// Обновляем параметры тендера
+
 	tender.Name = tenderVersion.Name
 	tender.Description = tenderVersion.Description
 	tender.ServiceType = tenderVersion.ServiceType
 	tender.Status = tenderVersion.Status
 	tender.Version++
-	// Сохраняем изменения
+
 	if err := app.repo.SaveTender(tender); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Не удалось сохранить изменения тендера",
@@ -391,6 +385,5 @@ func (app *Application) ChangeTenderVersion(c *gin.Context) {
 		return
 	}
 
-	// Возвращаем успешный ответ
 	c.JSON(http.StatusOK, tender)
 }

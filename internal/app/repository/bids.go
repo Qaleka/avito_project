@@ -240,13 +240,6 @@ func (r *Repository) AddBidFeedback(bid *ds.Bid, feedBack string, userId string)
 	}
 	bidFeedback.AuthorID = userId
 	bidFeedback.CreatedAt = time.Now()
-	if err := r.db.Create(&bidFeedback).Error; err != nil {
-		return nil, err
-	}
-	err := r.db.Save(bidFeedback).Error
-	if err != nil {
-		return nil,err
-	}
 	return &bidFeedback, nil
 }
 
@@ -259,4 +252,40 @@ func (r *Repository) SaveFeedback(bidFeedback *ds.Feedback) error {
 		return err
 	}
 	return nil
+}
+
+func (r *Repository) GetBidsByAuthorAndTender(tenderID string, authorId string) ([]ds.Bid, error) {
+	var bids []ds.Bid
+
+	query := r.db.Where("tender_id = ? AND author_id = ?", tenderID, authorId)
+
+	if err := query.Find(&bids).Error; err != nil {
+		return nil, err
+	}
+
+	return bids, nil
+}
+
+func (r *Repository) GetReviewsByBid(bidID string, limit int, offset int) ([]ds.Feedback, error) {
+	var feedbacks []ds.Feedback
+
+	// Строим базовый запрос для поиска отзывов по BidId
+	query := r.db.Where("bid_id = ?", bidID)
+
+	// Применяем лимит, если он указан
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	// Применяем смещение, если оно указано
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+
+	// Выполняем запрос и сохраняем результат в срез feedbacks
+	if err := query.Find(&feedbacks).Error; err != nil {
+		return nil, err
+	}
+
+	return feedbacks, nil
 }
