@@ -19,10 +19,12 @@ func (r *Repository) GetAllTenders(serviceType string, limit int, offset int) ([
 	}
 	query := r.db.Where("service_type LIKE ?", "%" + serviceType + "%").Order("name ASC")
 	if limit > 0 {
-		query = r.db.Limit(limit)
+		query = query.Limit(limit)
+	} else {
+		query = query.Limit(5)
 	}
 	if offset > 0 {
-		query = r.db.Offset(offset)
+		query = query.Offset(offset)
 	}
 	if err := query.Find(&tenders).Error; err != nil {
 		return nil, err
@@ -90,10 +92,12 @@ func (r *Repository) GetUserTenders(limit int, offset int, username string) ([]d
 	}
 	query := r.db.Where("creator_id = ?",employee.ID).Order("name ASC")
 	if limit > 0 {
-		query = r.db.Limit(limit)
+		query = query.Limit(limit)
+	} else {
+		query = query.Limit(5)
 	}
 	if offset > 0 {
-		query = r.db.Offset(offset)
+		query = query.Offset(offset)
 	}
 	if err := query.Find(&tenders).Error; err != nil {
 		return nil, err

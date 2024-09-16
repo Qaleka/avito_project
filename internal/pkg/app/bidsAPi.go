@@ -379,6 +379,12 @@ func (app *Application) SubmitBid(c *gin.Context) {
 		return
 	}
 
+	if bid.Status == ds.CANCELED || bid.Status == ds.PUBLISHED {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Предложение уже рассмотрено",
+		})
+	}
+
 	if request.Query.Decision == "Approved" {
 		bid.Status = ds.PUBLISHED
 		tender.Status = ds.CLOSED
@@ -388,6 +394,13 @@ func (app *Application) SubmitBid(c *gin.Context) {
 	if err := app.repo.SaveBid(bid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"reason": "Ошибка при сохранении предложения",
+		})
+		return
+	}
+
+	if err := app.repo.SaveBidVersion(bid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"reason": "Ошибка при сохранении версии предложения: " + err.Error(),
 		})
 		return
 	}

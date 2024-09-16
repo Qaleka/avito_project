@@ -79,16 +79,20 @@ func (r *Repository) GetUserBids(limit int, offset int, username string) ([]ds.B
 		}
 		return nil, err
 	}
+	fmt.Println(employee.ID)
 	query := r.db.Where("author_id = ?",employee.ID).Order("name ASC")
 	if limit > 0 {
-		query = r.db.Limit(limit)
+		query = query.Limit(limit)
+	} else {
+		query = query.Limit(5)
 	}
 	if offset > 0 {
-		query = r.db.Offset(offset)
+		query = query.Offset(offset)
 	}
 	if err := query.Find(&bids).Error; err != nil {
 		return nil, err
 	}
+	fmt.Println(bids)
 	return bids, nil
 }
 
@@ -115,10 +119,12 @@ func (r *Repository) GetTenderBids(request schemes.GetTenderBidsRequest) ([]ds.B
 	}
 	query := r.db.Where("tender_id = ?",tender.ID).Order("name ASC")
 	if request.Query.Limit > 0 {
-		query = r.db.Limit(request.Query.Limit)
+		query = query.Limit(request.Query.Limit)
+	} else {
+		query = query.Limit(5)
 	}
 	if request.Query.Offset > 0 {
-		query = r.db.Offset(request.Query.Offset)
+		query = query.Offset(request.Query.Offset)
 	}
 	if err := query.Find(&bids).Error; err != nil {
 		return nil, err
